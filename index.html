@@ -13,31 +13,65 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
     }
-    #backgroundCanvas {
-      position: fixed;
+    h1 {
+      margin: 10px 0;
+      font-size: 24px;
+      text-align: center;
+      z-index: 5;
+      position: relative;
+    }
+    #canvasWrapper {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      height: 100%;
+      max-height: 600px;
+      overflow: hidden;
+    }
+    canvas {
+      position: absolute;
       top: 0;
       left: 0;
+    }
+    #backgroundCanvas, #gameCanvas {
       width: 100%;
       height: 100%;
+    }
+    #backgroundCanvas {
       z-index: 1;
     }
     #gameCanvas {
-      background-color: #444;
-      border: 2px solid white;
       z-index: 2;
     }
+    #effectsCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0; /* Keep it behind all content */
+      pointer-events: none; /* Prevent interaction issues */
+    }
     #controls {
-      z-index: 3;
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      z-index: 4;
       text-align: center;
-      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
     }
     #score {
       font-size: 20px;
-      margin-bottom: 10px;
+      margin-right: 20px;
     }
     #gameButton, #funButton {
       background-color: #ff4444;
@@ -47,7 +81,6 @@
       font-size: 18px;
       cursor: pointer;
       border-radius: 5px;
-      margin: 5px;
     }
     #gameButton:hover, #funButton:hover {
       background-color: #ff6666;
@@ -55,13 +88,17 @@
     #counter {
       font-size: 18px;
       color: pink;
-      margin-top: 5px;
+      margin-left: 20px;
     }
   </style>
 </head>
 <body>
-  <canvas id="backgroundCanvas"></canvas>
-  <canvas id="gameCanvas"></canvas>
+  <canvas id="effectsCanvas"></canvas>
+  <h1>Welcome to Button's Special Game!</h1>
+  <div id="canvasWrapper">
+    <canvas id="backgroundCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
+  </div>
   <div id="controls">
     <div id="score">Score: 0</div>
     <button id="gameButton">Start Game</button>
@@ -70,10 +107,13 @@
   </div>
 
   <script>
+    const canvasWrapper = document.getElementById('canvasWrapper');
     const backgroundCanvas = document.getElementById('backgroundCanvas');
+    const gameCanvas = document.getElementById('gameCanvas');
+    const effectsCanvas = document.getElementById('effectsCanvas');
     const bgCtx = backgroundCanvas.getContext('2d');
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    const gameCtx = gameCanvas.getContext('2d');
+    const effectsCtx = effectsCanvas.getContext('2d');
     const gameButton = document.getElementById('gameButton');
     const funButton = document.getElementById('funButton');
     const counterDisplay = document.getElementById('counter');
@@ -88,24 +128,30 @@
 
     // Set canvas size dynamically
     const updateCanvasSize = () => {
-      backgroundCanvas.width = canvas.width = Math.min(window.innerWidth - 20, 800);
-      canvas.height = backgroundCanvas.height = Math.min(window.innerHeight - 150, 600);
+      const width = Math.min(window.innerWidth, 800);
+      const height = Math.min(window.innerHeight - 100, 600);
+      backgroundCanvas.width = gameCanvas.width = width;
+      backgroundCanvas.height = gameCanvas.height = height;
+
+      // Set effects canvas to cover the entire page
+      effectsCanvas.width = window.innerWidth;
+      effectsCanvas.height = window.innerHeight;
     };
     updateCanvasSize();
 
     // Paddle
     const paddle = {
-      width: canvas.width / 5,
+      width: gameCanvas.width / 5,
       height: 20,
-      x: canvas.width / 2 - canvas.width / 10,
-      y: canvas.height - 30,
+      x: gameCanvas.width / 2 - gameCanvas.width / 10,
+      y: gameCanvas.height - 30,
       dx: 0,
       speed: 8,
     };
 
     // Ball
     const ball = {
-      x: Math.random() * canvas.width,
+      x: Math.random() * gameCanvas.width,
       y: 0,
       radius: 10,
       speed: 4,
@@ -115,7 +161,7 @@
     const movePaddle = () => {
       paddle.x += paddle.dx;
       if (paddle.x < 0) paddle.x = 0;
-      if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+      if (paddle.x + paddle.width > gameCanvas.width) paddle.x = gameCanvas.width - paddle.width;
     };
 
     // Arrow Key Controls
@@ -130,15 +176,15 @@
 
     // Touch and Mouse Controls
     const handleMove = (x) => {
-      const rect = canvas.getBoundingClientRect();
+      const rect = gameCanvas.getBoundingClientRect();
       const posX = x - rect.left;
-      paddle.x = Math.max(0, Math.min(posX - paddle.width / 2, canvas.width - paddle.width));
+      paddle.x = Math.max(0, Math.min(posX - paddle.width / 2, gameCanvas.width - paddle.width));
     };
 
-    canvas.addEventListener('mousemove', (e) => handleMove(e.clientX));
-    canvas.addEventListener('mousedown', (e) => handleMove(e.clientX));
-    canvas.addEventListener('touchstart', (e) => handleMove(e.touches[0].clientX));
-    canvas.addEventListener('touchmove', (e) => {
+    gameCanvas.addEventListener('mousemove', (e) => handleMove(e.clientX));
+    gameCanvas.addEventListener('mousedown', (e) => handleMove(e.clientX));
+    gameCanvas.addEventListener('touchstart', (e) => handleMove(e.touches[0].clientX));
+    gameCanvas.addEventListener('touchmove', (e) => {
       handleMove(e.touches[0].clientX);
       e.preventDefault();
     });
@@ -148,8 +194,8 @@
       cancelAnimationFrame(gameLoopId);
       score = 0;
       isGameOver = false;
-      paddle.x = canvas.width / 2 - paddle.width / 2;
-      ball.x = Math.random() * canvas.width;
+      paddle.x = gameCanvas.width / 2 - paddle.width / 2;
+      ball.x = Math.random() * gameCanvas.width;
       ball.y = 0;
       scoreDisplay.innerText = `Score: ${score}`;
       gameRunning = true;
@@ -173,17 +219,17 @@
 
     // Draw Paddle
     const drawPaddle = () => {
-      ctx.fillStyle = 'white';
-      ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+      gameCtx.fillStyle = 'white';
+      gameCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
     };
 
     // Draw Ball
     const drawBall = () => {
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      ctx.fillStyle = 'red';
-      ctx.fill();
-      ctx.closePath();
+      gameCtx.beginPath();
+      gameCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      gameCtx.fillStyle = 'red';
+      gameCtx.fill();
+      gameCtx.closePath();
     };
 
     // Update Ball Position
@@ -197,11 +243,11 @@
       ) {
         score++;
         ball.y = 0;
-        ball.x = Math.random() * canvas.width;
+        ball.x = Math.random() * gameCanvas.width;
         scoreDisplay.innerText = `Score: ${score}`;
       }
 
-      if (ball.y > canvas.height) {
+      if (ball.y > gameCanvas.height) {
         isGameOver = true;
       }
     };
@@ -210,7 +256,7 @@
     const gameLoop = () => {
       if (!gameRunning) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
       if (!isGameOver) {
         drawPaddle();
@@ -219,10 +265,10 @@
         movePaddle();
         gameLoopId = requestAnimationFrame(gameLoop);
       } else {
-        ctx.fillStyle = 'white';
-        ctx.font = '30px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Game Over! Press Reset', canvas.width / 2, canvas.height / 2);
+        gameCtx.fillStyle = 'white';
+        gameCtx.font = '30px Arial';
+        gameCtx.textAlign = 'center';
+        gameCtx.fillText('Game Over! Press Reset', gameCanvas.width / 2, gameCanvas.height / 2);
       }
     };
 
@@ -230,8 +276,8 @@
     const addStars = () => {
       for (let i = 0; i < 50; i++) {
         stars.push({
-          x: Math.random() * backgroundCanvas.width,
-          y: Math.random() * backgroundCanvas.height / 2, // Start from the upper half
+          x: Math.random() * effectsCanvas.width,
+          y: Math.random() * effectsCanvas.height / 2,
           size: Math.random() * 5 + 2,
           dy: Math.random() * 2 + 1,
           opacity: Math.random(),
@@ -240,13 +286,13 @@
     };
 
     const drawStars = () => {
-      bgCtx.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+      effectsCtx.clearRect(0, 0, effectsCanvas.width, effectsCanvas.height);
 
       stars.forEach((star) => {
-        bgCtx.fillStyle = `rgba(255, 255, 0, ${star.opacity})`;
-        bgCtx.beginPath();
-        bgCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        bgCtx.fill();
+        effectsCtx.fillStyle = `rgba(255, 255, 0, ${star.opacity})`;
+        effectsCtx.beginPath();
+        effectsCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        effectsCtx.fill();
       });
 
       stars.forEach((star) => {
@@ -263,16 +309,18 @@
       addStars();
     });
 
-    // Animate Background
-    const animateBackground = () => {
+    // Animate Effects Canvas
+    const animateEffects = () => {
       drawStars();
-      requestAnimationFrame(animateBackground);
+      requestAnimationFrame(animateEffects);
     };
 
-    animateBackground();
+    animateEffects();
 
     // Handle Window Resize
     window.addEventListener('resize', updateCanvasSize);
   </script>
 </body>
 </html>
+
+
