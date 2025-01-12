@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Button's Special Game</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #222;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas {
+      background-color: #444;
+      border: 2px solid white;
+      box-sizing: border-box;
+    }
+    #controls {
+      text-align: center;
+      margin: 10px 0;
+    }
+    #title {
+      font-size: 30px;
+      font-weight: bold;
+      color: #ff4444;
+      margin-bottom: 10px;
+    }
+    #score {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    #gameButton {
+      background-color: #ff4444;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #gameButton:hover {
+      background-color: #ff6666;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <div id="title">Button's Special Game</div>
+    <div id="score">Score: 0</div>
+    <button id="gameButton">Start Game</button>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gameButton = document.getElementById('gameButton');
+
+    // Set canvas size dynamically for mobile
+    const updateCanvasSize = () => {
+      canvas.width = Math.min(window.innerWidth - 20, 800); // Fit width with padding
+      canvas.height = Math.min(window.innerHeight - 150, 600); // Leave space for controls
+    };
+    updateCanvasSize();
+
+    let score = 0;
+    let isGameOver = false;
+    let gameLoopId = null;
+
+    // Paddle
+    const paddle = {
+      width: canvas.width / 5,
+      height: 20,
+      x: canvas.width / 2 - canvas.width / 10,
+      y: canvas.height - 30,
+      dx: 0,
+      speed: 8,
+    };
+
+    // Ball
+    const ball = {
+      x: Math.random() * canvas.width,
+      y: 0,
+      radius: 10,
+      speed: 4,
+    };
+
+    let gameRunning = false;
+
+    // Paddle Movement via Click/Drag
+    const movePaddle = (x) => {
+      const rect = canvas.getBoundingClientRect();
+      const posX = x - rect.left;
+      paddle.x = Math.max(0, Math.min(posX - paddle.width / 2, canvas.width - paddle.width));
+    };
+
+    // Mouse and Touch Controls
+    canvas.addEventListener('mousedown', (e) => movePaddle(e.clientX));
+    canvas.addEventListener('mousemove', (e) => {
+      if (e.buttons === 1) movePaddle(e.clientX); // Only move if mouse button is held
+    });
+    canvas.addEventListener('touchstart', (e) => movePaddle(e.touches[0].clientX));
+    canvas.addEventListener('touchmove', (e) => {
+      movePaddle(e.touches[0].clientX);
+      e.preventDefault(); // Prevent scrolling while playing
+    });
+
+    // Keyboard Controls
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') paddle.dx = -paddle.speed;
+      if (e.key === 'ArrowRight') paddle.dx = paddle.speed;
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') paddle.dx = 0;
+    });
+
+    // Reset Game
+    const resetGame = () => {
+      cancelAnimationFrame(gameLoopId); // Stop the existing game loop
+      score = 0;
+      isGameOver = false;
+      paddle.x = canvas.width / 2 - paddle.width / 2;
+      ball.x = Math.random() * canvas.width;
+      ball.y = 0;
+      document.getElementById('score').innerText = `Score: ${score}`;
+      gameRunning = true; // Keep the game running
+      gameLoop(); // Restart the game loop
+    };
+
+    // Start Game
+    const startGame = () => {
+      gameRunning = true;
+      gameButton.innerText = "Reset Game";
+      resetGame();
+    };
+
+    gameButton.addEventListener('click', () => {
+      if (!gameRunning) {
+        startGame();
+      } else {
+        resetGame();
+      }
+    });
+
+    // Draw Paddle
+    const drawPaddle = () => {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+    };
+
+    // Draw Ball
+    const drawBall = () => {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+      ctx.closePath();
+    };
+
+    // Update Paddle Position
+    const updatePaddle = () => {
+      paddle.x += paddle.dx;
+      if (paddle.x < 0) paddle.x = 0;
+      if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+    };
+
+    // Update Ball Position
+    const updateBall = () => {
+      ball.y += ball.speed;
+
+      // Ball reset and scoring
+      if (
+        ball.y + ball.radius > paddle.y &&
+        ball.x > paddle.x &&
+        ball.x < paddle.x + paddle.width
+      ) {
+        score++;
+        ball.y = 0;
+        ball.x = Math.random() * canvas.width;
+        document.getElementById('score').innerText = `Score: ${score}`;
+      }
+
+      // Missed ball
+      if (ball.y > canvas.height) {
+        isGameOver = true;
+      }
+    };
+
+    // Main Game Loop
+    const gameLoop = () => {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!isGameOver) {
+        drawPaddle();
+        drawBall();
+        updatePaddle();
+        updateBall();
+        gameLoopId = requestAnimationFrame(gameLoop);
+      } else {
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Game Over! Press Reset', canvas.width / 2, canvas.height / 2);
+      }
+    };
+
+    // Handle Window Resizing
+    window.addEventListener('resize', () => {
+      updateCanvasSize();
+      resetGame();
+    });
+  </script>
+</body>
+</html>
