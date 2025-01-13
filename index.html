@@ -113,113 +113,60 @@
   </div>
 
   <script>
-    const canvasWrapper = document.getElementById('canvasWrapper');
-    const backgroundCanvas = document.getElementById('backgroundCanvas');
     const gameCanvas = document.getElementById('gameCanvas');
     const effectsCanvas = document.getElementById('effectsCanvas');
-    const bgCtx = backgroundCanvas.getContext('2d');
     const gameCtx = gameCanvas.getContext('2d');
     const effectsCtx = effectsCanvas.getContext('2d');
     const gameButton = document.getElementById('gameButton');
     const funButton = document.getElementById('funButton');
-    const counterDisplay = document.getElementById('counter');
     const scoreDisplay = document.getElementById('score');
+    const counterDisplay = document.getElementById('counter');
 
     let score = 0;
-    let isGameOver = false;
-    let gameLoopId = null;
-    let gameRunning = false;
     let funCount = 0;
+    let gameRunning = false;
+    let isGameOver = false;
     let stars = [];
-    let ballSpeed = 4;
-    let paddleSpeed = 8;
-
-    if (window.innerWidth < 600) {
-      ballSpeed = 3;
-      paddleSpeed = 6;
-    }
-
-    const updateCanvasSize = () => {
-      const width = canvasWrapper.clientWidth;
-      const height = canvasWrapper.clientHeight;
-      backgroundCanvas.width = gameCanvas.width = width;
-      backgroundCanvas.height = gameCanvas.height = height;
-
-      effectsCanvas.width = window.innerWidth;
-      effectsCanvas.height = window.innerHeight;
-    };
-    updateCanvasSize();
+    let gameLoopId = null;
 
     const paddle = {
-      width: gameCanvas.width / 5,
+      width: 100,
       height: 20,
-      x: gameCanvas.width / 2 - gameCanvas.width / 10,
+      x: gameCanvas.width / 2 - 50,
       y: gameCanvas.height - 30,
       dx: 0,
-      speed: paddleSpeed,
+      speed: 8,
     };
 
     const ball = {
       x: Math.random() * gameCanvas.width,
       y: 0,
       radius: 10,
-      speed: ballSpeed,
+      speed: 4,
     };
 
-    const movePaddle = () => {
-      paddle.x += paddle.dx;
-      if (paddle.x < 0) paddle.x = 0;
-      if (paddle.x + paddle.width > gameCanvas.width) paddle.x = gameCanvas.width - paddle.width;
+    const updateCanvasSize = () => {
+      gameCanvas.width = window.innerWidth * 0.8;
+      gameCanvas.height = window.innerHeight * 0.6;
+      effectsCanvas.width = window.innerWidth;
+      effectsCanvas.height = window.innerHeight;
+      paddle.x = gameCanvas.width / 2 - paddle.width / 2;
+      paddle.y = gameCanvas.height - 30;
     };
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') paddle.dx = -paddle.speed;
-      if (e.key === 'ArrowRight') paddle.dx = paddle.speed;
-    });
-
-    document.addEventListener('keyup', (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') paddle.dx = 0;
-    });
-
-    const handleMove = (x) => {
-      const rect = gameCanvas.getBoundingClientRect();
-      const posX = x - rect.left;
-      paddle.x = Math.max(0, Math.min(posX - paddle.width / 2, gameCanvas.width - paddle.width));
-    };
-
-    gameCanvas.addEventListener('mousemove', (e) => handleMove(e.clientX));
-    gameCanvas.addEventListener('mousedown', (e) => handleMove(e.clientX));
-    gameCanvas.addEventListener('touchstart', (e) => handleMove(e.touches[0].clientX));
-    gameCanvas.addEventListener('touchmove', (e) => {
-      handleMove(e.touches[0].clientX);
-      e.preventDefault();
-    });
+    updateCanvasSize();
 
     const resetGame = () => {
       cancelAnimationFrame(gameLoopId);
       score = 0;
       isGameOver = false;
-      paddle.x = gameCanvas.width / 2 - paddle.width / 2;
       ball.x = Math.random() * gameCanvas.width;
       ball.y = 0;
-      scoreDisplay.innerText = `Score: ${score}`;
+      paddle.x = gameCanvas.width / 2 - paddle.width / 2;
+      scoreDisplay.textContent = `Score: ${score}`;
       gameRunning = true;
-      gameLoop();
+      lastTime = performance.now();
+      gameLoopId = requestAnimationFrame(gameLoop);
     };
-
-    const startGame = () => {
-      gameRunning = true;
-      gameButton.innerText = "Reset Game";
-      resetGame();
-    };
-
-    gameButton.addEventListener('click', () => {
-      if (!gameRunning) {
-        startGame();
-      } else {
-        resetGame();
-      }
-    });
 
     const drawPaddle = () => {
       gameCtx.fillStyle = 'white';
@@ -234,9 +181,8 @@
       gameCtx.closePath();
     };
 
-    const updateBall = () => {
-      ball.y += ball.speed;
-
+    const updateBall = (deltaTime) => {
+      ball.y += ball.speed * (deltaTime / 16.67);
       if (
         ball.y + ball.radius > paddle.y &&
         ball.x > paddle.x &&
@@ -245,30 +191,36 @@
         score++;
         ball.y = 0;
         ball.x = Math.random() * gameCanvas.width;
-        scoreDisplay.innerText = `Score: ${score}`;
+        scoreDisplay.textContent = `Score: ${score}`;
       }
-
       if (ball.y > gameCanvas.height) {
         isGameOver = true;
       }
     };
 
-    const gameLoop = () => {
+    const movePaddle = () => {
+      paddle.x += paddle.dx;
+      paddle.x = Math.max(0, Math.min(paddle.x, gameCanvas.width - paddle.width));
+    };
+
+    const gameLoop = (timestamp) => {
       if (!gameRunning) return;
 
-      gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+      const deltaTime = timestamp - lastTime;
+      lastTime = timestamp;
 
+      gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
       if (!isGameOver) {
         drawPaddle();
         drawBall();
-        updateBall();
+        updateBall(deltaTime);
         movePaddle();
         gameLoopId = requestAnimationFrame(gameLoop);
       } else {
         gameCtx.fillStyle = 'white';
-        gameCtx.font = '30px Arial';
+        gameCtx.font = '24px Arial';
         gameCtx.textAlign = 'center';
-        gameCtx.fillText('Game Over! Press Reset', gameCanvas.width / 2, gameCanvas.height / 2);
+        gameCtx.fillText('Game Over! Press Reset.', gameCanvas.width / 2, gameCanvas.height / 2);
       }
     };
 
@@ -286,35 +238,49 @@
 
     const drawStars = () => {
       effectsCtx.clearRect(0, 0, effectsCanvas.width, effectsCanvas.height);
-
       stars.forEach((star) => {
         effectsCtx.fillStyle = `rgba(255, 255, 0, ${star.opacity})`;
         effectsCtx.beginPath();
         effectsCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         effectsCtx.fill();
       });
-
       stars.forEach((star) => {
         star.y += star.dy;
         star.opacity -= 0.002;
       });
-
       stars = stars.filter((star) => star.opacity > 0);
     };
-
-    funButton.addEventListener('click', () => {
-      funCount++;
-      counterDisplay.innerText = `Press Count: ${funCount}`;
-      addStars();
-    });
 
     const animateEffects = () => {
       drawStars();
       requestAnimationFrame(animateEffects);
     };
 
-    animateEffects();
+    funButton.addEventListener('click', () => {
+      funCount++;
+      counterDisplay.textContent = `Press Count: ${funCount}`;
+      addStars();
+    });
+
+    gameButton.addEventListener('click', () => {
+      if (!gameRunning) {
+        resetGame();
+        gameButton.textContent = 'Reset Game';
+      } else {
+        resetGame();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') paddle.dx = -paddle.speed;
+      if (e.key === 'ArrowRight') paddle.dx = paddle.speed;
+    });
+
+    document.addEventListener('keyup', () => (paddle.dx = 0));
+
     window.addEventListener('resize', updateCanvasSize);
+    animateEffects();
   </script>
 </body>
 </html>
+
