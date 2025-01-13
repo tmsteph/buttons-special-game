@@ -30,11 +30,11 @@
       max-width: 800px;
       height: 90%;
       max-height: 600px;
-      border: 3px solid #fff; /* Highlight the game area */
+      border: 3px solid #fff;
       border-radius: 10px;
-      background-color: #333; /* Add a distinct game background */
+      background-color: #333;
       overflow: hidden;
-      z-index: 2; /* Ensure it remains below the effectsCanvas */
+      z-index: 2;
     }
     canvas {
       position: absolute;
@@ -57,8 +57,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: 3; /* Ensure it's on top of everything */
-      pointer-events: none; /* Prevent interaction issues */
+      z-index: 3;
+      pointer-events: none;
     }
     #controls {
       position: fixed;
@@ -131,29 +131,25 @@
     let gameRunning = false;
     let funCount = 0;
     let stars = [];
-    let ballSpeed = 4; // Default ball speed
-    let paddleSpeed = 8; // Default paddle speed
+    let ballSpeed = 4;
+    let paddleSpeed = 8;
 
-    // Adjust difficulty for smaller screens
     if (window.innerWidth < 600) {
-      ballSpeed = 3; // Slow down ball
-      paddleSpeed = 6; // Slow down paddle movement
+      ballSpeed = 3;
+      paddleSpeed = 6;
     }
 
-    // Set canvas size dynamically
     const updateCanvasSize = () => {
       const width = canvasWrapper.clientWidth;
       const height = canvasWrapper.clientHeight;
       backgroundCanvas.width = gameCanvas.width = width;
       backgroundCanvas.height = gameCanvas.height = height;
 
-      // Set effects canvas to cover the entire page
       effectsCanvas.width = window.innerWidth;
       effectsCanvas.height = window.innerHeight;
     };
     updateCanvasSize();
 
-    // Paddle
     const paddle = {
       width: gameCanvas.width / 5,
       height: 20,
@@ -163,7 +159,6 @@
       speed: paddleSpeed,
     };
 
-    // Ball
     const ball = {
       x: Math.random() * gameCanvas.width,
       y: 0,
@@ -171,14 +166,12 @@
       speed: ballSpeed,
     };
 
-    // Move Paddle
     const movePaddle = () => {
       paddle.x += paddle.dx;
       if (paddle.x < 0) paddle.x = 0;
       if (paddle.x + paddle.width > gameCanvas.width) paddle.x = gameCanvas.width - paddle.width;
     };
 
-    // Arrow Key Controls
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft') paddle.dx = -paddle.speed;
       if (e.key === 'ArrowRight') paddle.dx = paddle.speed;
@@ -188,7 +181,6 @@
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') paddle.dx = 0;
     });
 
-    // Touch and Mouse Controls
     const handleMove = (x) => {
       const rect = gameCanvas.getBoundingClientRect();
       const posX = x - rect.left;
@@ -203,7 +195,6 @@
       e.preventDefault();
     });
 
-    // Reset Game
     const resetGame = () => {
       cancelAnimationFrame(gameLoopId);
       score = 0;
@@ -216,7 +207,6 @@
       gameLoop();
     };
 
-    // Start Game
     const startGame = () => {
       gameRunning = true;
       gameButton.innerText = "Reset Game";
@@ -231,13 +221,11 @@
       }
     });
 
-    // Draw Paddle
     const drawPaddle = () => {
       gameCtx.fillStyle = 'white';
       gameCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
     };
 
-    // Draw Ball
     const drawBall = () => {
       gameCtx.beginPath();
       gameCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
@@ -246,7 +234,6 @@
       gameCtx.closePath();
     };
 
-    // Update Ball Position
     const updateBall = () => {
       ball.y += ball.speed;
 
@@ -266,7 +253,6 @@
       }
     };
 
-    // Game Loop
     const gameLoop = () => {
       if (!gameRunning) return;
 
@@ -286,14 +272,13 @@
       }
     };
 
-    // Add Stars for Fun Button
     const addStars = () => {
       for (let i = 0; i < 50; i++) {
         stars.push({
           x: Math.random() * effectsCanvas.width,
           y: Math.random() * effectsCanvas.height / 2,
           size: Math.random() * 5 + 2,
-          dy: Math.random() * 2 + 1,
+          dy: Math.random() * 4 + 2,
           opacity: Math.random(),
         });
       }
@@ -311,7 +296,7 @@
 
       stars.forEach((star) => {
         star.y += star.dy;
-        star.opacity -= 0.01;
+        star.opacity -= 0.002;
       });
 
       stars = stars.filter((star) => star.opacity > 0);
@@ -323,17 +308,13 @@
       addStars();
     });
 
-    // Animate Effects Canvas
     const animateEffects = () => {
       drawStars();
       requestAnimationFrame(animateEffects);
     };
 
     animateEffects();
-
-    // Handle Window Resize
     window.addEventListener('resize', updateCanvasSize);
   </script>
 </body>
 </html>
-
