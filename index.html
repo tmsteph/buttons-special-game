@@ -7,6 +7,7 @@
   <style>
     body {
       margin: 0;
+      padding: 10px;
       background-color: #222;
       color: white;
       font-family: Arial, sans-serif;
@@ -14,21 +15,23 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      height: 100vh;
-      overflow: hidden;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
     }
     h1 {
       margin: 10px 0;
-      font-size: 24px;
+      font-size: clamp(24px, 6vw, 42px);
       text-align: center;
       z-index: 5;
       position: relative;
+      line-height: 1.08;
     }
     #canvasWrapper {
       position: relative;
-      width: 90%;
+      width: min(90vw, 800px);
       max-width: 800px;
-      height: 90%;
+      height: clamp(340px, 62dvh, 600px);
       max-height: 600px;
       border: 3px solid #fff;
       border-radius: 10px;
@@ -66,6 +69,7 @@
       left: 50%;
       transform: translateX(-50%);
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: center;
       gap: 10px;
@@ -74,10 +78,11 @@
       background: rgba(0, 0, 0, 0.6);
       padding: 10px 20px;
       border-radius: 10px;
+      box-sizing: border-box;
+      width: min(92vw, 720px);
     }
     #score {
       font-size: 20px;
-      margin-right: 20px;
     }
     #gameButton, #funButton {
       background-color: #ff4444;
@@ -94,7 +99,42 @@
     #counter {
       font-size: 18px;
       color: pink;
-      margin-left: 20px;
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: 8px;
+      }
+      h1 {
+        margin: 8px 0 12px;
+        font-size: clamp(28px, 10vw, 42px);
+      }
+      #canvasWrapper {
+        width: calc(100vw - 28px);
+        height: clamp(330px, 58dvh, 560px);
+        border-width: 2px;
+      }
+      #controls {
+        position: static;
+        transform: none;
+        width: calc(100vw - 20px);
+        margin: 12px auto 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 10px;
+      }
+      #score,
+      #counter {
+        font-size: 17px;
+        line-height: 1.2;
+      }
+      #gameButton,
+      #funButton {
+        min-height: 56px;
+        padding: 10px;
+        font-size: 16px;
+      }
     }
   </style>
 </head>
